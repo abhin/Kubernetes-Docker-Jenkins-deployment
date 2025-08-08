@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_AGENT_IMAGE = "your-dockerhub-user/jenkins-agent-with-docker:latest"
         DOCKER_AGENT_IMAGE = "abhin785/kubernetes-docker-jenkins-deployment"
     }
 
