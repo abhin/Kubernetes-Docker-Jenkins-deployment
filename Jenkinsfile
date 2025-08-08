@@ -1,54 +1,48 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'NAMESPACE', defaultValue: 'default', description: 'Kubernetes Namespace to deploy to')
-    }
-
     environment {
-        IMAGE_REPO = "abhin785/kubernetes-docker-jenkins-deployment"
+        DOCKER_AGENT_IMAGE = "your-dockerhub-user/jenkins-agent-with-docker:latest"
+        DOCKER_AGENT_IMAGE = "abhin785/kubernetes-docker-jenkins-deployment"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/abhin/Kubernetes-Docker-Jenkins-deployment.git'
+                git url: 'https://github.com/abhin/Kubernetes-Docker-Jenkins-deployment.git', branch: 'master'
             }
         }
 
-        stage('Set Build Date') {
+        stage('Build Agent Image') {
             steps {
                 script {
-                    env.BUILD_DATE = new Date().format('yyyyMMdd')
-                    env.IMAGE_NAME = "${env.IMAGE_REPO}:${env.BUILD_DATE}"
-                    echo "Build date set to ${env.BUILD_DATE}"
-                    echo "Image name set to ${env.IMAGE_NAME}"
+                    docker.build(DOCKER_AGENT_IMAGE, '-f Dockerfile-agent .')
                 }
             }
         }
 
-        stage('Check Docker') {
+        stage('Push Agent Image') {
             steps {
-                sh '''
-                if ! command -v docker &> /dev/null
-                then
-                    echo "Docker CLI not found"
-                    exit 1
-                fi
-                docker --version
-                '''
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
+                        docker.image(DOCKER_AGENT_IMAGE).push()
+                    }
+                }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build App Image') {
             steps {
                 script {
+                    def buildDate = new Date().format('yyyyMMdd')
+                    env.BUILD_DATE = buildDate
+                    env.IMAGE_NAME = "${DOCKER_AGENT_IMAGE}:${buildDate}"
                     docker.build(env.IMAGE_NAME)
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push App Image') {
             steps {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
@@ -62,8 +56,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                    kubectl apply -n ${params.NAMESPACE} -f deployment.yaml
-                    kubectl set image deployment/kubernetes-jenkins-deployment kubernetes-jenkins-container=${env.IMAGE_NAME} -n ${params.NAMESPACE}
+                    kubectl apply -f deployment.yaml
+                    kubectl set image deployment/kubernetes-jenkins-deployment kubernetes-jenkins-container=${env.IMAGE_NAME} -n default
                     """
                 }
             }
@@ -72,10 +66,10 @@ pipeline {
 
     post {
         success {
-            echo 'Build and deployment successful!'
+            echo 'All images built, pushed, and app deployed successfully.'
         }
         failure {
-            echo 'Build or deployment failed.'
+            echo 'Pipeline failed.'
         }
     }
 }
