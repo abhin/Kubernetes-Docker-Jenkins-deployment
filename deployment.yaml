@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: kubernetes-jenkins-container
-        image: abhin785/kubernetes-docker-jenkins-deployment:latest  # will be overwritten by Jenkins pipeline
+        image: abhin785/kubernetes-docker-jenkins-deployment:latest  # Will be overwritten by kubectl set image
         ports:
         - containerPort: 80
 ---
@@ -31,6 +31,6 @@ spec:
     app: kubernetes-jenkins-app
   ports:
     - protocol: TCP
-      port: 80         # Service port inside cluster
-      targetPort: 80   # Container port
-      nodePort: 30080  # Port exposed on nodes, access via http://<node-ip>:30080
+      port: 80
+      targetPort: 80
+      nodePort: 30080

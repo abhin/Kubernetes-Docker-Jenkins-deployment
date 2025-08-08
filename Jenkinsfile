@@ -19,7 +19,6 @@ pipeline {
         stage('Set Build Date') {
             steps {
                 script {
-                    // Set build date as env variable to use in next stages
                     env.BUILD_DATE = new Date().format('yyyyMMdd')
                     env.IMAGE_NAME = "${env.IMAGE_REPO}:${env.BUILD_DATE}"
                     echo "Build date set to ${env.BUILD_DATE}"
@@ -29,11 +28,17 @@ pipeline {
         }
 
         stage('Check Docker') {
-    steps {
-        sh 'docker --version || echo "Docker CLI not found"'
-    }
-}
-
+            steps {
+                sh '''
+                if ! command -v docker &> /dev/null
+                then
+                    echo "Docker CLI not found"
+                    exit 1
+                fi
+                docker --version
+                '''
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -57,7 +62,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                    kubectl apply -n ${params.NAMESPACE} -f /deployment.yaml
+                    kubectl apply -n ${params.NAMESPACE} -f deployment.yaml
                     kubectl set image deployment/kubernetes-jenkins-deployment kubernetes-jenkins-container=${env.IMAGE_NAME} -n ${params.NAMESPACE}
                     """
                 }
