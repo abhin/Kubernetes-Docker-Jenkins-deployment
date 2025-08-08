@@ -28,6 +28,13 @@ pipeline {
             }
         }
 
+        stage('Check Docker') {
+    steps {
+        sh 'docker --version || echo "Docker CLI not found"'
+    }
+}
+
+
         stage('Build Docker Image') {
             steps {
                 script {
