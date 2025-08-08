@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: kubernetes-jenkins-container
-        image: abhin/kubernetes-docker-jenkins-deployment:latest  # will be overwritten by Jenkins pipeline
+        image: abhin785/kubernetes-docker-jenkins-deployment:latest  # will be overwritten by Jenkins pipeline
         ports:
         - containerPort: 80
 ---
