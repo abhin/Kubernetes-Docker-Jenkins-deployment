@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        IMAGE_REPO = "abhin/kubernetes-docker-jenkins-deployment"
+        IMAGE_REPO = "abhin785/kubernetes-docker-jenkins-deployment"
     }
 
     stages {
