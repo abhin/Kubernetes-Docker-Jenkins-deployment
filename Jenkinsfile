@@ -6,13 +6,13 @@ pipeline {
     }
 
     environment {
-        IMAGE_REPO = "your-docker-repo/your-image"
+        IMAGE_REPO = "abhin/kubernetes-docker-jenkins-deployment"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo.git'
+                git branch: 'main', url: 'https://github.com/abhin/Kubernetes-Docker-Jenkins-deployment'
             }
         }
 
@@ -39,7 +39,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-credentials-id') {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
                         docker.image(env.IMAGE_NAME).push()
                     }
                 }
@@ -50,8 +50,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                    kubectl apply -n ${params.NAMESPACE} -f k8s/deployment.yaml
-                    kubectl set image deployment/your-deployment your-container=${env.IMAGE_NAME} -n ${params.NAMESPACE}
+                    kubectl apply -n ${params.NAMESPACE} -f /deployment.yaml
+                    kubectl set image deployment/kubernetes-jenkins-deployment kubernetes-jenkins-container=${env.IMAGE_NAME} -n ${params.NAMESPACE}
                     """
                 }
             }
