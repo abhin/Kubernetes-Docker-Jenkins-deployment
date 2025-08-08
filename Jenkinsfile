@@ -28,7 +28,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
+                container('docker') {
                     sh "docker build -t ${DOCKER_REPO}:${IMAGE_TAG} ."
                 }
             }
@@ -46,8 +46,12 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    sh "docker push ${DOCKER_REPO}:${IMAGE_TAG}"
+                container('docker') {
+                    script {
+                        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                            sh "docker push ${DOCKER_REPO}:${IMAGE_TAG}"
+                        }
+                    }
                 }
             }
         }
