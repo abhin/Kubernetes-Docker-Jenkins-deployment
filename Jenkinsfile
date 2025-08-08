@@ -1,52 +1,53 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'NAMESPACE', defaultValue: 'default', description: 'Kubernetes namespace to deploy to')
+    }
+
     environment {
-        DOCKER_AGENT_IMAGE = "abhin785/kubernetes-docker-jenkins-deployment"
+        DOCKER_REPO = 'abhin785/kubernetes-docker-jenkins-deployment'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/abhin/Kubernetes-Docker-Jenkins-deployment.git', branch: 'master'
+                git branch: 'master', url: 'https://github.com/abhin/Kubernetes-Docker-Jenkins-deployment.git'
             }
         }
 
-        stage('Build Agent Image') {
+        stage('Set Build ID') {
             steps {
                 script {
-                    docker.build(DOCKER_AGENT_IMAGE, '-f Dockerfile-agent .')
+                    env.BUILD_DATE = new Date().format('yyyyMMdd')
+                    env.IMAGE_TAG = "${env.BUILD_DATE}"
+                    echo "Build date tag: ${env.IMAGE_TAG}"
                 }
             }
         }
 
-        stage('Push Agent Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
-                        docker.image(DOCKER_AGENT_IMAGE).push()
+                    sh "docker build -t ${DOCKER_REPO}:${IMAGE_TAG} ."
+                }
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        echo 'Logged into Docker Hub'
                     }
                 }
             }
         }
 
-        stage('Build App Image') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    def buildDate = new Date().format('yyyyMMdd')
-                    env.BUILD_DATE = buildDate
-                    env.IMAGE_NAME = "${DOCKER_AGENT_IMAGE}:${buildDate}"
-                    docker.build(env.IMAGE_NAME)
-                }
-            }
-        }
-
-        stage('Push App Image') {
-            steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
-                        docker.image(env.IMAGE_NAME).push()
-                    }
+                    sh "docker push ${DOCKER_REPO}:${IMAGE_TAG}"
                 }
             }
         }
@@ -54,10 +55,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh """
-                    kubectl apply -f deployment.yaml
-                    kubectl set image deployment/kubernetes-jenkins-deployment kubernetes-jenkins-container=${env.IMAGE_NAME} -n default
-                    """
+                    sh "helm upgrade --install myapp ./helm-chart --namespace ${params.NAMESPACE} --set image.tag=${IMAGE_TAG}"
                 }
             }
         }
